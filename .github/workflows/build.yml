@@ -106,10 +106,36 @@ jobs:
             gradle-${{ runner.os }}-
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+        shell: bash --noprofile --norc {0}
+        run: |
+          ./gradlew testDebugUnitTest --stacktrace > /tmp/test.log 2>&1
+          EXIT=$?
+          tail -c 60000 /tmp/test.log
+          if [ "$EXIT" -ne 0 ]; then
+            {
+              echo "## Unit test failure log (tail)"
+              echo '```'
+              tail -c 60000 /tmp/test.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$EXIT"
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        shell: bash --noprofile --norc {0}
+        run: |
+          ./gradlew assembleDebug --stacktrace > /tmp/build.log 2>&1
+          EXIT=$?
+          tail -c 60000 /tmp/build.log
+          if [ "$EXIT" -ne 0 ]; then
+            {
+              echo "## Build failure log (tail)"
+              echo '```'
+              tail -c 60000 /tmp/build.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$EXIT"
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
