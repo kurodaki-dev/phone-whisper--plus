@@ -108,17 +108,24 @@ jobs:
       - name: Run unit tests
         shell: bash --noprofile --norc {0}
         run: |
+          echo "=== diagnostic marker: step started ===" >> "$GITHUB_STEP_SUMMARY"
+          echo "pwd: $(pwd)" >> "$GITHUB_STEP_SUMMARY"
+          ls -la gradlew >> "$GITHUB_STEP_SUMMARY" 2>&1
+
           ./gradlew testDebugUnitTest --stacktrace > /tmp/test.log 2>&1
           EXIT=$?
-          tail -c 60000 /tmp/test.log
-          if [ "$EXIT" -ne 0 ]; then
-            {
-              echo "## Unit test failure log (tail)"
-              echo '```'
-              tail -c 60000 /tmp/test.log
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo "=== gradlew exit code: $EXIT ===" >> "$GITHUB_STEP_SUMMARY"
+          echo "=== log file size: $(wc -c < /tmp/test.log 2>/dev/null || echo missing) bytes ===" >> "$GITHUB_STEP_SUMMARY"
+
+          cat /tmp/test.log
+
+          {
+            echo "## Unit test log (tail, exit=$EXIT)"
+            echo '```'
+            tail -c 60000 /tmp/test.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
           exit "$EXIT"
 
       - name: Build debug APK
