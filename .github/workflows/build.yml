@@ -24,33 +24,38 @@ jobs:
           java-version: "17"
 
       - name: Install Android SDK components
+        shell: bash
         run: |
-          set -euxo pipefail
           echo "ANDROID_HOME=${ANDROID_HOME:-<unset>}"
           echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<unset>}"
-          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-          if [ -z "$SDK_ROOT" ]; then
-            echo "Neither ANDROID_HOME nor ANDROID_SDK_ROOT is set" >&2
-            exit 1
+
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "Using SDK_ROOT=$SDK_ROOT"
+
+          SDKMANAGER=""
+          if [ -d "$SDK_ROOT/cmdline-tools" ]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -maxdepth 2 -iname sdkmanager -type f 2>/dev/null | sort -V | tail -1)"
           fi
 
-          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -maxdepth 2 -iname sdkmanager -type f 2>/dev/null | sort -V | tail -1 || true)"
           if [ -z "$SDKMANAGER" ]; then
-            echo "No sdkmanager found under $SDK_ROOT/cmdline-tools, downloading cmdline-tools..."
+            echo "No existing sdkmanager found, downloading fresh cmdline-tools..."
             mkdir -p "$SDK_ROOT/cmdline-tools"
             curl -fsSL -o /tmp/cmdline-tools.zip \
               "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
-            unzip -q /tmp/cmdline-tools.zip -d "$SDK_ROOT/cmdline-tools"
-            mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+            unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools-extracted
+            rm -rf "$SDK_ROOT/cmdline-tools/latest"
+            mv /tmp/cmdline-tools-extracted/cmdline-tools "$SDK_ROOT/cmdline-tools/latest"
             SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           fi
 
           echo "Using sdkmanager at: $SDKMANAGER"
           chmod +x "$SDKMANAGER"
 
-          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses || true
-          "$SDKMANAGER" --sdk_root="$SDK_ROOT" \
-            "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses
+          echo "Licenses step exit code: $?"
+
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          echo "Package install exit code: $?"
 
           echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
