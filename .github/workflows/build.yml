@@ -24,58 +24,60 @@ jobs:
           java-version: "17"
 
       - name: Install Android SDK components
-        shell: bash
+        shell: bash --noprofile --norc {0}
         run: |
           LOG="/tmp/sdk-setup.log"
           : > "$LOG"
-          exec > >(tee -a "$LOG") 2>&1
 
-          echo "ANDROID_HOME=${ANDROID_HOME:-<unset>}"
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<unset>}"
-          echo "JAVA_HOME=${JAVA_HOME:-<unset>}"
+          {
+            echo "ANDROID_HOME=${ANDROID_HOME:-<unset>}"
+            echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<unset>}"
+            echo "JAVA_HOME=${JAVA_HOME:-<unset>}"
 
-          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          echo "Using SDK_ROOT=$SDK_ROOT"
-          echo "--- contents of \$SDK_ROOT/cmdline-tools (if any) ---"
-          find "$SDK_ROOT/cmdline-tools" -maxdepth 3 2>&1 || echo "(cmdline-tools dir does not exist)"
+            SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+            echo "Using SDK_ROOT=$SDK_ROOT"
+            echo "--- contents of \$SDK_ROOT/cmdline-tools (if any) ---"
+            find "$SDK_ROOT/cmdline-tools" -maxdepth 3 2>&1
 
-          SDKMANAGER=""
-          if [ -d "$SDK_ROOT/cmdline-tools" ]; then
-            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -maxdepth 2 -iname sdkmanager -type f 2>/dev/null | sort -V | tail -1)"
-          fi
+            SDKMANAGER=""
+            if [ -d "$SDK_ROOT/cmdline-tools" ]; then
+              SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -maxdepth 2 -iname sdkmanager -type f 2>/dev/null | sort -V | tail -1)"
+            fi
 
-          if [ -z "$SDKMANAGER" ]; then
-            echo "No existing sdkmanager found, downloading fresh cmdline-tools..."
-            mkdir -p "$SDK_ROOT/cmdline-tools"
-            curl -fsSL -o /tmp/cmdline-tools.zip \
-              "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
-            echo "curl exit code: $?"
-            unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools-extracted
-            echo "unzip exit code: $?"
-            rm -rf "$SDK_ROOT/cmdline-tools/latest"
-            mv /tmp/cmdline-tools-extracted/cmdline-tools "$SDK_ROOT/cmdline-tools/latest"
-            SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          fi
+            if [ -z "$SDKMANAGER" ]; then
+              echo "No existing sdkmanager found, downloading fresh cmdline-tools..."
+              mkdir -p "$SDK_ROOT/cmdline-tools"
+              curl -fsSL -o /tmp/cmdline-tools.zip \
+                "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+              echo "curl exit code: $?"
+              unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools-extracted
+              echo "unzip exit code: $?"
+              rm -rf "$SDK_ROOT/cmdline-tools/latest"
+              mv /tmp/cmdline-tools-extracted/cmdline-tools "$SDK_ROOT/cmdline-tools/latest"
+              SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+            fi
 
-          echo "Using sdkmanager at: $SDKMANAGER"
-          ls -la "$SDKMANAGER" || echo "sdkmanager path does not exist!"
-          chmod +x "$SDKMANAGER"
+            echo "Using sdkmanager at: $SDKMANAGER"
+            ls -la "$SDKMANAGER"
+            chmod +x "$SDKMANAGER"
 
-          echo "--- sdkmanager --version ---"
-          "$SDKMANAGER" --version
-          echo "version check exit code: $?"
+            echo "--- sdkmanager --version ---"
+            "$SDKMANAGER" --version
+            echo "version check exit code: $?"
 
-          echo "--- accepting licenses ---"
-          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses
-          echo "Licenses step exit code: $?"
+            echo "--- accepting licenses ---"
+            yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses
+            echo "Licenses step exit code: $?"
 
-          echo "--- installing packages ---"
-          "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-          PKG_EXIT=$?
-          echo "Package install exit code: $PKG_EXIT"
+            echo "--- installing packages ---"
+            "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+            echo "Package install exit code: $?"
 
-          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+            echo "$SDK_ROOT" > /tmp/sdk-root.txt
+          } > "$LOG" 2>&1
+          STEP_EXIT=$?
+
+          cat "$LOG"
 
           {
             echo "## Android SDK setup log"
@@ -84,7 +86,11 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-          exit "$PKG_EXIT"
+          SDK_ROOT="$(cat /tmp/sdk-root.txt 2>/dev/null || echo "${ANDROID_HOME:-/usr/local/lib/android/sdk}")"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+
+          exit "$STEP_EXIT"
 
       - name: Grant execute permission to gradlew
         run: chmod +x gradlew
