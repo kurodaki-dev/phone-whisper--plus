@@ -23,8 +23,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Install Android SDK components
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 2 -name sdkmanager -type f | sort -V | tail -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found under \$ANDROID_HOME/cmdline-tools" >&2
+            exit 1
+          fi
+          echo "Using $SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses > /dev/null
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" \
+            "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null
 
       - name: Grant execute permission to gradlew
         run: chmod +x gradlew
