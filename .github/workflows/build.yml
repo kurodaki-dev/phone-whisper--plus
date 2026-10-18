@@ -136,6 +136,22 @@ jobs:
           path: /tmp/test.log
           if-no-files-found: ignore
 
+      - name: Post test log as commit comment on failure
+        if: failure()
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BODY_FILE=/tmp/comment-body.txt
+          {
+            echo "### CI: unit test failure log (tail)"
+            echo '```'
+            tail -c 60000 /tmp/test.log
+            echo '```'
+          } > "$BODY_FILE"
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body=@"$BODY_FILE" || echo "Failed to post commit comment (exit $?)"
+
       - name: Build debug APK
         shell: bash --noprofile --norc {0}
         run: |
@@ -159,6 +175,22 @@ jobs:
           name: build-log
           path: /tmp/build.log
           if-no-files-found: ignore
+
+      - name: Post build log as commit comment on failure
+        if: failure()
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BODY_FILE=/tmp/comment-body.txt
+          {
+            echo "### CI: build failure log (tail)"
+            echo '```'
+            tail -c 60000 /tmp/build.log
+            echo '```'
+          } > "$BODY_FILE"
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body=@"$BODY_FILE" || echo "Failed to post commit comment (exit $?)"
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
