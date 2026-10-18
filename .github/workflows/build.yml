@@ -149,8 +149,9 @@ jobs:
             tail -c 60000 /tmp/test.log
             echo '```'
           } > "$BODY_FILE"
+          jq -Rs '{body: .}' "$BODY_FILE" > /tmp/comment-payload.json
           gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
-            -f body=@"$BODY_FILE" || echo "Failed to post commit comment (exit $?)"
+            --input /tmp/comment-payload.json || echo "Failed to post commit comment (exit $?)"
 
       - name: Build debug APK
         shell: bash --noprofile --norc {0}
@@ -189,8 +190,9 @@ jobs:
             tail -c 60000 /tmp/build.log
             echo '```'
           } > "$BODY_FILE"
+          jq -Rs '{body: .}' "$BODY_FILE" > /tmp/comment-payload.json
           gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
-            -f body=@"$BODY_FILE" || echo "Failed to post commit comment (exit $?)"
+            --input /tmp/comment-payload.json || echo "Failed to post commit comment (exit $?)"
 
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
