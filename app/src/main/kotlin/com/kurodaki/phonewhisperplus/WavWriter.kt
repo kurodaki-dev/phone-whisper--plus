@@ -1,4 +1,4 @@
-package com.kafkasl.phonewhisper
+package com.kurodaki.phonewhisperplus
 
 /** Wraps raw PCM bytes in a WAV container. */
 object WavWriter {

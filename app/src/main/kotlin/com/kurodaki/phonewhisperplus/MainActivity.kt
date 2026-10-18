@@ -1,4 +1,4 @@
-package com.kafkasl.phonewhisper
+package com.kurodaki.phonewhisperplus
 
 import android.Manifest
 import android.content.Intent
@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
 
         // Top large header (like "Connected devices")
         val header = TextView(this).apply {
-            text = "Phone Whisper"
+            text = "Phone Whisper+"
             textSize = 32f
             setPadding(dp(24), dp(64), dp(24), dp(24))
         }
@@ -99,10 +99,15 @@ class MainActivity : AppCompatActivity() {
         }
         root.addView(cloudRow)
 
-        // Local Models section
+        // Local Models section, grouped by language
         modelContainer = vertical(0)
         modelContainer.addView(sectionHeader("Local models"))
-        for (m in MODEL_CATALOG) modelContainer.addView(buildModelRow(m))
+        for (lang in modelCatalogLanguages()) {
+            modelContainer.addView(subSectionHeader(lang))
+            for (m in MODEL_CATALOG.filter { it.language == lang }) {
+                modelContainer.addView(buildModelRow(m))
+            }
+        }
         root.addView(modelContainer)
 
         // --- Post-Processing Section ---
@@ -432,6 +437,14 @@ class MainActivity : AppCompatActivity() {
         setTypeface(typeface, Typeface.BOLD)
         setTextColor(attrColor(com.google.android.material.R.attr.colorPrimary)) // Neutral Android-like blue
         setPadding(dp(24), dp(24), dp(24), dp(8))
+    }
+
+    private fun subSectionHeader(title: String) = TextView(this).apply {
+        text = title
+        textSize = 12f
+        setTypeface(typeface, Typeface.BOLD)
+        setTextColor(attrColor(android.R.attr.textColorSecondary))
+        setPadding(dp(24), dp(12), dp(24), dp(4))
     }
 
     private fun vertical(padH: Int, padV: Int = padH) = LinearLayout(this).apply {

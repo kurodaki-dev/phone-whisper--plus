@@ -1,4 +1,4 @@
-package com.kafkasl.phonewhisper
+package com.kurodaki.phonewhisperplus
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
@@ -41,10 +41,19 @@ class ModelDownloaderTest {
     }
 
     @Test fun `catalog has expected structure`() {
-        assertEquals(4, MODEL_CATALOG.size)
-        assertTrue(MODEL_CATALOG.any { it.recommended })
+        assertTrue("catalog should offer many models", MODEL_CATALOG.size >= 10)
+        assertEquals(1, MODEL_CATALOG.count { it.recommended })
         assertTrue(MODEL_CATALOG.all { it.archive.startsWith("sherpa-onnx-") })
         assertTrue(MODEL_CATALOG.all { it.sizeMb > 0 })
+        assertTrue(MODEL_CATALOG.all { it.language.isNotBlank() })
+        // No duplicate archive names.
+        assertEquals(MODEL_CATALOG.size, MODEL_CATALOG.map { it.archive }.distinct().size)
+    }
+
+    @Test fun `catalog languages are grouped contiguously`() {
+        // modelCatalogLanguages() should reflect catalog order with duplicates removed.
+        val expected = MODEL_CATALOG.map { it.language }.distinct()
+        assertEquals(expected, modelCatalogLanguages())
     }
 
     // -- helpers --

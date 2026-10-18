@@ -1,4 +1,4 @@
-package com.kafkasl.phonewhisper
+package com.kurodaki.phonewhisperplus
 
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType

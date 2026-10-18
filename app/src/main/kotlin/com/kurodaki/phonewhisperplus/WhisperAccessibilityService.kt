@@ -1,4 +1,4 @@
-package com.kafkasl.phonewhisper
+package com.kurodaki.phonewhisperplus
 
 import android.accessibilityservice.AccessibilityService
 import android.content.ClipData
@@ -22,12 +22,15 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import java.io.ByteArrayOutputStream
 import kotlin.concurrent.thread
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.sqrt
 
 class WhisperAccessibilityService : AccessibilityService() {
 
@@ -41,12 +44,17 @@ class WhisperAccessibilityService : AccessibilityService() {
         private const val TAP_THRESHOLD_DP = 10
         private const val RING_DP = 56
         private const val FEEDBACK_OFFSET_DP = 64
+        private const val PILL_HEIGHT_DP = 48
+        private const val PILL_WIDTH_DP = 116
+        private const val STOP_BTN_DP = 32
 
         private const val COLOR_IDLE = 0xDD1C1C1E.toInt()
         private const val COLOR_RECORDING = 0xDDEF4444.toInt()
         private const val COLOR_BUSY = 0xDD6B6B6B.toInt()
         private const val COLOR_FEEDBACK_BG = 0xEE1C1C1E.toInt()
         private const val COLOR_RING = 0xFFE8EAED.toInt()
+        private const val COLOR_PILL_BG = 0xDD1C1C1E.toInt()
+        private const val COLOR_STOP_BTN = 0xFFEF4444.toInt()
     }
 
     private enum class State { IDLE, RECORDING, TRANSCRIBING }
@@ -56,6 +64,10 @@ class WhisperAccessibilityService : AccessibilityService() {
     private var button: ImageView? = null
     private var spinner: ProgressBar? = null
     private var feedbackView: TextView? = null
+    private var idleGroup: FrameLayout? = null
+    private var recordingPill: LinearLayout? = null
+    private var waveform: WaveformView? = null
+    private var stopButton: ImageView? = null
     private var layoutParams: WindowManager.LayoutParams? = null
     private var feedbackLayoutParams: WindowManager.LayoutParams? = null
     private var audioRecord: AudioRecord? = null
@@ -87,21 +99,29 @@ class WhisperAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         instance = null
         removeOverlay()
+        localTranscriber?.release()
+        localTranscriber = null
         super.onDestroy()
     }
 
     private fun initLocalModel() {
+        // Release any previously loaded model first to avoid holding two sets of
+        // native ONNX buffers in memory at once while switching models.
+        localTranscriber?.release()
+        localTranscriber = null
+
         val modelName = prefs().getString("model_name", "") ?: ""
-        if (modelName.isBlank()) {
+        localTranscriber = if (modelName.isBlank()) {
             // Auto-detect first available model
             val models = LocalTranscriber.availableModels(this)
-            if (models.isNotEmpty()) {
-                Log.i(TAG, "Auto-detected model: ${models.first()}")
-                localTranscriber = LocalTranscriber.create(this, models.first())
+            models.firstOrNull()?.let {
+                Log.i(TAG, "Auto-detected model: $it")
+                LocalTranscriber.create(this, it)
             }
         } else {
-            localTranscriber = LocalTranscriber.create(this, modelName)
+            LocalTranscriber.create(this, modelName)
         }
+
         if (localTranscriber != null) {
             Log.i(TAG, "Local transcription ready")
         } else {
@@ -120,7 +140,11 @@ class WhisperAccessibilityService : AccessibilityService() {
         val ringSize = (RING_DP * dp).toInt()
         val pad = (PAD_DP * dp).toInt()
         val margin = (MARGIN_DP * dp).toInt()
+        val pillHeight = (PILL_HEIGHT_DP * dp).toInt()
+        val pillWidth = (PILL_WIDTH_DP * dp).toInt()
+        val stopBtnSize = (STOP_BTN_DP * dp).toInt()
 
+        // Idle state: ring + mic button (unchanged visual).
         val ring = ProgressBar(this).apply {
             isIndeterminate = true
             indeterminateTintList = ColorStateList.valueOf(COLOR_RING)
@@ -134,26 +158,59 @@ class WhisperAccessibilityService : AccessibilityService() {
             background = circle(COLOR_IDLE)
         }
 
-        val overlay = FrameLayout(this).apply {
+        val idle = FrameLayout(this).apply {
             addView(ring, FrameLayout.LayoutParams(ringSize, ringSize, Gravity.CENTER))
             addView(img, FrameLayout.LayoutParams(buttonSize, buttonSize, Gravity.CENTER))
         }
 
+        // Recording state: live waveform pill + a stop (X) button.
+        val wave = WaveformView(this)
+        val stopBtn = ImageView(this).apply {
+            setImageResource(R.drawable.ic_close)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            setPadding((6 * dp).toInt(), (6 * dp).toInt(), (6 * dp).toInt(), (6 * dp).toInt())
+            background = circle(COLOR_STOP_BTN)
+        }
+
+        val pill = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = pill(COLOR_PILL_BG, cornerRadiusDp = PILL_HEIGHT_DP / 2f)
+            setPadding((8 * dp).toInt(), 0, (8 * dp).toInt(), 0)
+            visibility = View.GONE
+            addView(wave, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f))
+            addView(stopBtn, LinearLayout.LayoutParams(stopBtnSize, stopBtnSize).apply {
+                marginStart = (6 * dp).toInt()
+            })
+        }
+
+        stopBtn.setOnClickListener { if (state == State.RECORDING) onTap() }
+
+        val overlay = FrameLayout(this).apply {
+            addView(idle, FrameLayout.LayoutParams(ringSize, ringSize, Gravity.CENTER))
+            addView(pill, FrameLayout.LayoutParams(pillWidth, pillHeight, Gravity.CENTER))
+        }
+
+        // Container is sized to the larger pill state; the idle ring/button is centered
+        // within it so the overlay never needs a window resize when switching states.
+        val containerW = max(ringSize, pillWidth)
+        val containerH = max(ringSize, pillHeight)
+
         val params = WindowManager.LayoutParams(
-            ringSize, ringSize,
+            containerW, containerH,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = screenW - ringSize - margin
-            y = screenH / 2 - ringSize / 2
+            x = screenW - containerW - margin
+            y = screenH / 2 - containerH / 2
         }
 
         var startX = 0; var startY = 0
         var touchX = 0f; var touchY = 0f
 
-        overlay.setOnTouchListener { v, ev ->
+        idle.setOnTouchListener { v, ev ->
             when (ev.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startX = params.x; startY = params.y
@@ -163,7 +220,7 @@ class WhisperAccessibilityService : AccessibilityService() {
                 MotionEvent.ACTION_MOVE -> {
                     params.x = startX + (ev.rawX - touchX).toInt()
                     params.y = startY + (ev.rawY - touchY).toInt()
-                    wm.updateViewLayout(v, params)
+                    wm.updateViewLayout(overlay, params)
                     feedbackLayoutParams?.let {
                         positionFeedback(it, params)
                         wm.updateViewLayout(feedbackView, it)
@@ -175,9 +232,9 @@ class WhisperAccessibilityService : AccessibilityService() {
                     if (moved < TAP_THRESHOLD_DP * dp) {
                         onTap()
                     } else {
-                        params.x = if (params.x + ringSize / 2 > screenW / 2)
-                            screenW - ringSize - margin else margin
-                        wm.updateViewLayout(v, params)
+                        params.x = if (params.x + containerW / 2 > screenW / 2)
+                            screenW - containerW - margin else margin
+                        wm.updateViewLayout(overlay, params)
                         feedbackLayoutParams?.let {
                             positionFeedback(it, params)
                             wm.updateViewLayout(feedbackView, it)
@@ -217,6 +274,10 @@ class WhisperAccessibilityService : AccessibilityService() {
         feedbackView = feedback
         layoutParams = params
         feedbackLayoutParams = feedbackParams
+        idleGroup = idle
+        recordingPill = pill
+        waveform = wave
+        stopButton = stopBtn
     }
 
     private fun removeOverlay() {
@@ -233,20 +294,33 @@ class WhisperAccessibilityService : AccessibilityService() {
         spinner = null
         layoutParams = null
         feedbackLayoutParams = null
+        idleGroup = null
+        recordingPill = null
+        waveform = null
+        stopButton = null
     }
 
     private fun circle(color: Int) = GradientDrawable().apply {
         shape = GradientDrawable.OVAL; setColor(color)
     }
 
-    private fun pill(color: Int) = GradientDrawable().apply {
+    private fun pill(color: Int, cornerRadiusDp: Float = 16f) = GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
-        cornerRadius = 16 * dp
+        cornerRadius = cornerRadiusDp * dp
         setColor(color)
     }
 
     private fun setAppearance(color: Int) {
         handler.post { button?.background = circle(color) }
+    }
+
+    /** Switches the overlay between the idle mic button and the live recording pill. */
+    private fun setRecordingUi(recording: Boolean) {
+        handler.post {
+            idleGroup?.visibility = if (recording) View.GONE else View.VISIBLE
+            recordingPill?.visibility = if (recording) View.VISIBLE else View.GONE
+            if (!recording) waveform?.reset()
+        }
     }
 
     private fun setBusy(visible: Boolean) {
@@ -331,20 +405,44 @@ class WhisperAccessibilityService : AccessibilityService() {
         state = State.RECORDING
         setBusy(false)
         setAppearance(COLOR_RECORDING)
+        setRecordingUi(true)
         startPulse()
 
         thread {
             val buf = ByteArray(bufSize)
             while (state == State.RECORDING) {
                 val n = audioRecord?.read(buf, 0, buf.size) ?: break
-                if (n > 0) pcmStream?.write(buf, 0, n)
+                if (n > 0) {
+                    pcmStream?.write(buf, 0, n)
+                    waveform?.pushLevel(rmsLevel(buf, n))
+                }
             }
         }
+    }
+
+    /** Normalized (0f..1f) RMS loudness of a chunk of 16-bit PCM audio, for the waveform UI. */
+    private fun rmsLevel(buf: ByteArray, len: Int): Float {
+        var sumSquares = 0.0
+        var count = 0
+        var i = 0
+        while (i + 1 < len) {
+            val lo = buf[i].toInt() and 0xFF
+            val hi = buf[i + 1].toInt()
+            val sample = ((hi shl 8) or lo).toShort().toFloat() / 32768f
+            sumSquares += sample * sample
+            count++
+            i += 2
+        }
+        if (count == 0) return 0f
+        val rms = sqrt(sumSquares / count).toFloat()
+        // Scale so normal speech volume lands comfortably mid-range; clamp handles the rest.
+        return (rms * 4.5f).coerceIn(0f, 1f)
     }
 
     private fun stopAndTranscribe() {
         state = State.TRANSCRIBING
         stopPulse()
+        setRecordingUi(false)
         setAppearance(COLOR_BUSY)
         setBusy(true)
 

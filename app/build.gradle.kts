@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.kafkasl.phonewhisper"
+    namespace = "com.kurodaki.phonewhisperplus"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.kafkasl.phonewhisper"
+        applicationId = "com.kurodaki.phonewhisperplus"
         minSdk = 30
         targetSdk = 34
         versionCode = 2

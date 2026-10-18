@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="docs/logo.svg" width="128" height="128" alt="Phone Whisper Logo">
+  <img src="docs/logo.svg" width="128" height="128" alt="Phone Whisper+ Logo">
 </p>
 
-# Phone Whisper
+# Phone Whisper+
 
 Push-to-talk dictation for Android.
 
-Phone Whisper lets you speak into most apps without switching keyboards. Tap the floating button, speak, tap again, and your text is inserted into the currently focused text field when the app exposes a standard Android input field.\
+Phone Whisper+ lets you speak into most apps without switching keyboards. Tap the floating button, speak, tap again, and your text is inserted into the currently focused text field when the app exposes a standard Android input field.\
 
 It supports:
 
@@ -14,8 +14,7 @@ It supports:
 - **Cloud transcription** with OpenAI Whisper
 - **Optional cleanup** with OpenAI to fix punctuation and grammar
 
-If you try it and it genuinely saves you time, consider [sponsoring](https://github.com/sponsors/kafkasl)
-
+This is a fork of [kafkasl/phone-whisper](https://github.com/kafkasl/phone-whisper) — if you try it and it genuinely saves you time, consider [sponsoring the original author](https://github.com/sponsors/kafkasl).
 
 ## Why I built this
 
@@ -29,7 +28,7 @@ If you try it and it genuinely saves you time, consider [sponsoring](https://git
 
 ### Easiest: download the APK
 
-Grab the latest APK from [GitHub Releases](https://github.com/kafkasl/phone-whisper/releases).
+Grab the latest APK from [GitHub Releases](https://github.com/kurodaki-dev/phone-whisper--plus/releases).
 
 Open it on your phone, install it, then launch the app once to finish setup.
 
@@ -38,7 +37,7 @@ Open it on your phone, install it, then launch the app once to finish setup.
 Requires JDK 17 and Android SDK.
 
 ```bash
-git clone https://github.com/kafkasl/phone-whisper.git && cd phone-whisper
+git clone https://github.com/kurodaki-dev/phone-whisper--plus.git && cd phone-whisper--plus
 make build
 ```
 
@@ -67,7 +66,7 @@ make adb-install
 
 ### First-time setup
 
-1. Open **Phone Whisper**
+1. Open **Phone Whisper+**
 2. Grant the **audio recording** permission
 3. Enable the **Accessibility Service**
 4. Choose your transcription mode:
@@ -78,13 +77,13 @@ Once setup is done, the floating button is ready.
 
 ## Why does it need Accessibility?
 
-Phone Whisper uses Android Accessibility Service for one narrow reason: to insert dictated text into the currently focused text field across apps.
+Phone Whisper+ uses Android Accessibility Service for one narrow reason: to insert dictated text into the currently focused text field across apps.
 
 It does **not** replace your keyboard. It does **not** run background automation. It only acts after you explicitly tap the overlay button.
 
 ## Privacy
 
-Phone Whisper supports two modes:
+Phone Whisper+ supports two modes:
 
 - **Local mode**: audio stays on-device
 - **Cloud mode**: audio is sent directly from your device to OpenAI's transcription API
@@ -99,19 +98,30 @@ Full policy: [PRIVACY.md](PRIVACY.md)
 Models are stored in app storage under:
 
 ```bash
-/data/data/com.kafkasl.phonewhisper/files/models/
+/data/data/com.kurodaki.phonewhisperplus/files/models/
 ```
 
-Current catalog:
+Current catalog (grouped by language in the app):
 
-| Model | Size | Notes |
-|---|---:|---|
-| Parakeet 110M | 100 MB | Best default |
-| Whisper Base | 199 MB | Solid baseline |
-| Parakeet 0.6B | 465 MB | Best quality |
-| Moonshine Tiny | 103 MB | Fastest |
+| Model | Size | Language | Notes |
+|---|---:|---|---|
+| Parakeet 110M | 104 MB | English | Best value (default) |
+| Moonshine Tiny | 108 MB | English | Fastest |
+| Whisper Base (en) | 209 MB | English | Solid baseline |
+| Moonshine Base | 251 MB | English | Fast + accurate |
+| Parakeet 0.6B v2 / v3 | ~485 MB | English | Best quality |
+| Whisper Tiny (en) | 118 MB | English | Smallest Whisper |
+| Whisper Small (en) | 636 MB | English | High accuracy |
+| Whisper Distil Small/Medium (en) | 454 MB / 1 GB | English | Distilled, faster |
+| Whisper Medium (en) | 1.9 GB | English | Max accuracy |
+| Whisper Base/Small/Turbo (multi) | 208–639 MB | Multilingual | 90+ languages |
+| SenseVoice | 1 GB | Multilingual | zh / en / ja / ko / yue |
+| Canary 180M | 154 MB | Multilingual | en / es / de / fr |
+| Paraformer (zh) | 234 MB | Chinese | Mandarin |
+| Paraformer (zh/yue/en) | 1 GB | Chinese | Mandarin + Cantonese + English |
+| Paraformer (en) | 1 GB | English | Alibaba FunASR |
 
-The app downloads and extracts models directly from the sherpa-onnx release archives.
+The app downloads and extracts models directly from the sherpa-onnx release archives, with automatic cleanup on a failed or interrupted download.
 
 ## Development
 
@@ -122,17 +132,25 @@ make adb-install # build + install via ADB
 make clean       # clean build artifacts
 ```
 
+### Building via GitHub Actions
+
+Every push and pull request builds a debug APK automatically. Grab it from the
+**Actions** tab → latest run → **Artifacts** → `phone-whisper-plus-debug`.
+
+Pushing a tag like `v1.0.0` also publishes it as a GitHub Release.
+You can also trigger a build manually from the **Actions** tab (`Build APK` → `Run workflow`).
+
 ## App compatibility
 
-Phone Whisper works best in apps that use standard Android text fields.
+Phone Whisper+ works best in apps that use standard Android text fields.
 Some apps use custom text surfaces or terminal-style views, which may not support direct accessibility paste.
-When insertion is not possible, Phone Whisper falls back to copying the transcript to the clipboard.
+When insertion is not possible, Phone Whisper+ falls back to copying the transcript to the clipboard.
 
 ### Termux
 
 Termux's main terminal area is not a standard Android text field, so direct insertion may not work there.
 
-To use Phone Whisper in Termux:
+To use Phone Whisper+ in Termux:
 
 1. Focus Termux
 2. Swipe the extra keys row (`ESC`, `CTRL`, `ALT`, arrows, etc.) left or right
@@ -151,7 +169,7 @@ Once text is inserted into the native input box, Termux sends it to the terminal
 
 ## Support the project
 
-If Phone Whisper saves you time, you can sponsor the project on GitHub:
+If Phone Whisper+ saves you time, you can sponsor the original project on GitHub:
 
 - https://github.com/sponsors/kafkasl
 

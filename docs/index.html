@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Phone Whisper — Push-to-talk dictation for Android</title>
-  <meta name="description" content="Phone Whisper lets you speak into most apps without switching keyboards. Tap the floating button, speak, and your text is inserted when the app exposes a standard Android input field. Local or cloud transcription." />
+  <title>Phone Whisper+ — Push-to-talk dictation for Android</title>
+  <meta name="description" content="Phone Whisper+ lets you speak into most apps without switching keyboards. Tap the floating button, speak, and your text is inserted when the app exposes a standard Android input field. Local or cloud transcription." />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,7 +14,7 @@
 
   <nav id="nav">
     <div class="nav-inner">
-      <a href="#" class="nav-logo" aria-label="Phone Whisper home">
+      <a href="#" class="nav-logo" aria-label="Phone Whisper+ home">
         <svg class="nav-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <rect width="40" height="40" rx="10" fill="var(--accent)"/>
           <rect x="16" y="9" width="8" height="14" rx="4" fill="white"/>
@@ -22,14 +22,14 @@
           <line x1="20" y1="30" x2="20" y2="35" stroke="white" stroke-width="2" stroke-linecap="round"/>
           <line x1="16" y1="35" x2="24" y2="35" stroke="white" stroke-width="2" stroke-linecap="round"/>
         </svg>
-        <span>Phone Whisper</span>
+        <span>Phone Whisper+</span>
       </a>
       <div class="nav-links">
         <a href="#termux">Termux</a>
         <a href="#how-it-works">How it works</a>
         <a href="#modes">Local vs cloud</a>
         <a href="#faq">FAQ</a>
-        <a href="https://github.com/kafkasl/phone-whisper" target="_blank" rel="noopener" id="nav-github">GitHub</a>
+        <a href="https://github.com/kurodaki-dev/phone-whisper--plus" target="_blank" rel="noopener" id="nav-github">GitHub</a>
       </div>
     </div>
   </nav>
@@ -52,8 +52,8 @@
           <li>Optional cleanup for prompts, commands, and general writing</li>
         </ul>
         <div class="hero-ctas">
-          <a href="https://github.com/kafkasl/phone-whisper/releases" id="cta-download" class="btn btn-primary" target="_blank" rel="noopener">Download APK</a>
-          <a href="https://github.com/kafkasl/phone-whisper" id="cta-github" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
+          <a href="https://github.com/kurodaki-dev/phone-whisper--plus/releases" id="cta-download" class="btn btn-primary" target="_blank" rel="noopener">Download APK</a>
+          <a href="https://github.com/kurodaki-dev/phone-whisper--plus" id="cta-github" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
         </div>
         <div class="hero-links">
           <a href="mailto:pol.avms@gmail.com" id="link-contact">Contact me</a>
@@ -86,7 +86,7 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                 </div>
               </div>
-              <div class="overlay-button" id="overlay-btn" title="Tap to dictate" aria-label="Phone Whisper overlay button">
+              <div class="overlay-button" id="overlay-btn" title="Tap to dictate" aria-label="Phone Whisper+ overlay button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" stroke="none"/>
                   <path d="M5 10c0 3.87 3.13 7 7 7s7-3.13 7-7"/>
@@ -253,7 +253,7 @@
       <div class="info-box">
         <h2>Why Accessibility permission is needed</h2>
         <p>
-          Phone Whisper uses Android Accessibility Service for one narrow reason: <strong>inserting dictated text into the currently focused text field across apps.</strong>
+          Phone Whisper+ uses Android Accessibility Service for one narrow reason: <strong>inserting dictated text into the currently focused text field across apps.</strong>
         </p>
         <p>
           It does not replace your keyboard. It does not run background automation. It only acts after you explicitly tap the overlay button.
@@ -261,7 +261,7 @@
         <p>
           The app is open source. You can read exactly what it does before granting the permission.
         </p>
-        <a href="https://github.com/kafkasl/phone-whisper" class="info-link" target="_blank" rel="noopener">Read the source code on GitHub</a>
+        <a href="https://github.com/kurodaki-dev/phone-whisper--plus" class="info-link" target="_blank" rel="noopener">Read the source code on GitHub</a>
       </div>
     </div>
   </section>
@@ -299,7 +299,7 @@
         </div>
       </div>
       <div class="privacy-links">
-        <a href="https://github.com/kafkasl/phone-whisper" target="_blank" rel="noopener">GitHub repo</a>
+        <a href="https://github.com/kurodaki-dev/phone-whisper--plus" target="_blank" rel="noopener">GitHub repo</a>
         <span class="sep">·</span>
         <a href="privacy.html">Privacy policy</a>
       </div>
@@ -312,11 +312,11 @@
       <div class="faq-list">
         <details class="faq-item" id="faq-keyboard">
           <summary>Why not just make it a keyboard?</summary>
-          <p>A custom keyboard means replacing your existing keyboard entirely. That's a lot of friction. Phone Whisper leaves your keyboard alone and works on top of any app, any keyboard.</p>
+          <p>A custom keyboard means replacing your existing keyboard entirely. That's a lot of friction. Phone Whisper+ leaves your keyboard alone and works on top of any app, any keyboard.</p>
         </details>
         <details class="faq-item" id="faq-accessibility">
           <summary>Why does it need Accessibility permission?</summary>
-          <p>Android doesn't have a standard API for inserting text into another app's focused field. The Accessibility Service is the sanctioned way to do that cross-app. Phone Whisper uses it for exactly one thing: inserting the transcribed text.</p>
+          <p>Android doesn't have a standard API for inserting text into another app's focused field. The Accessibility Service is the sanctioned way to do that cross-app. Phone Whisper+ uses it for exactly one thing: inserting the transcribed text.</p>
         </details>
         <details class="faq-item" id="faq-audio">
           <summary>Does audio stay on-device?</summary>
@@ -346,7 +346,7 @@
     <div class="footer-inner">
       <p class="footer-line">Built by Pol. A small open-source Android app, shipped early and improved in public.</p>
       <div class="footer-links">
-        <a href="https://github.com/kafkasl/phone-whisper" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/kurodaki-dev/phone-whisper--plus" target="_blank" rel="noopener">GitHub</a>
         <span class="sep">·</span>
         <a href="mailto:pol.avms@gmail.com">pol.avms@gmail.com</a>
         <span class="sep">·</span>
